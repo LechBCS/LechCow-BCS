@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  # El repo es público: bloquea cualquier cosa que parezca dato confidencial (CLAUDE.md §6)
+  privacidad:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archivos prohibidos
+        run: |
+          bad=$(git ls-files | grep -iE '\.heic$|^data/raw/|(^|/)salidas/|(^|/)\.env|credentials.*\.json$' || true)
+          imgs=$(git ls-files | grep -iE '\.(jpe?g|png)$' | grep -v '^data/sample/' || true)
+          if [ -n "$bad$imgs" ]; then
+            echo "::error::Archivos no permitidos en el repo:"; printf '%s\n' $bad $imgs; exit 1
+          fi
+      - name: Archivos grandes (> 5 MB)
+        run: |
+          big=$(git ls-files -z | xargs -0 du -k | awk '$1 > 5120 {print $2}')
+          if [ -n "$big" ]; then echo "::error::Archivos > 5 MB:"; echo "$big"; exit 1; fi
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff
+      # Solo errores reales (sintaxis, nombres indefinidos), no estilo
+      - run: ruff check --select E9,F63,F7,F82 .
