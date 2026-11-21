@@ -4,3 +4,10 @@ pillow-heif
 scikit-learn
 pyarrow
 pandas
+# modelado y evaluación (DINOv2 + Ridge, YOLO, E1)
+torch
+timm
+scipy
+matplotlib
+joblib
+ultralytics
