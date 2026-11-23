@@ -5,7 +5,7 @@ Cada integrante sube su notebook (y su reporte, si lo entregó aparte) con su no
 | Integrante | Archivos | Tema |
 |---|---|---|
 | Carlos Martínez | `Carlos_Martinez.ipynb` | Duración de viajes en taxi de Nueva York con PySpark y MLlib |
-| Charbel Chávez | Pendiente | |
+| Charbel Chávez | `CharbelChavez_BigData.ipynb`, `Reporte_Charbel_Chavez_BigData` | NYC Yellow Taxi predicción de tarifas |
 | Dongju Mun | `A01712119_DongjuMun_BigData.ipynb` | Clasificación del dataset HIGGS con PySpark MLlib y Tableau |
 | Evan Santana | `Evan_Santana.ipynb` | Tarifas de taxi en Nueva York con PySpark y MLlib |
 | Juan Pablo Arteaga | `Juan_Arteaga.ipynb` | Regresión de la temperatura máxima del día siguiente en Estados Unidos con PySpark MLlib |
