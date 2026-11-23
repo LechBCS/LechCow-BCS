@@ -11,3 +11,5 @@ scipy
 matplotlib
 joblib
 ultralytics
+# mediciones de recursos (notebooks/1_datos/perfil_recursos.py)
+psutil

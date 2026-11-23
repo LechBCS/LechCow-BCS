@@ -1,0 +1,61 @@
+// Diagrama de componentes y flujo de datos del Reto Datos.
+// Generar: dot -Tpng -Gdpi=200 diagrama_componentes.dot -o diagrama_componentes.png
+digraph G {
+  rankdir=TB; newrank=true; nodesep=0.3; ranksep=0.45;
+  fontname="Helvetica"; fontsize=13;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#ffffff", color="#555555"];
+  edge [fontname="Helvetica", fontsize=9, color="#444444"];
+
+  subgraph cluster_fuentes {
+    label="1. Fuentes"; style="rounded,dashed"; color="#888888";
+    caetec [label="CAETEC\nfotos de celular\n(HEIC/JPG, 1 carpeta por vaca)"];
+    etiquetas [label="Etiquetas BCS\n(equipo y DeLaval)"];
+    sciencedb [label="ScienceDB\n(público, DOI 10.57760/\nsciencedb.16704)"];
+  }
+
+  subgraph cluster_drive {
+    label="2. Almacenamiento: Google Drive del equipo\n(privado, acceso por cuenta institucional)";
+    labelloc=b; style="rounded,filled"; fillcolor="#fdf1e6"; color="#d08a4a";
+    raw [label="raw/\noriginales sin modificar\n(solo lectura)"];
+    clean [label="clean/\nJPG 640 px sin EXIF/GPS\nnombre = SHA-256"];
+    processed [label="processed/\nParquet + CSV:\nimagenes, vacas, folds"];
+    recortes [label="recortes/\nsilueta SAM + CLAHE\nrecortes.csv"];
+    cache [label="caché de características\n.npz (604 × 2048)"];
+    modelo [label="modelo .joblib\n+ predicciones .csv"];
+  }
+
+  subgraph cluster_computo {
+    label="3. Cómputo"; style="rounded,filled"; fillcolor="#eaf2fb"; color="#4a7fc0";
+    etl [label="ETL PySpark\n(local[*], Colab o clúster\nde 3 máquinas)\nextraer, limpiar, k-fold,\ntransformar, cargar, verificar"];
+    seg [label="YOLO (detector) + SAM\nColab GPU T4"];
+    dino [label="DINOv2-L congelado\nMac M2 Pro (GPU MPS)"];
+    ridge [label="Ridge + evaluación\n(CPU)"];
+  }
+
+  subgraph cluster_repo {
+    label="4. Repositorio público: GitHub"; style="rounded,filled"; fillcolor="#eef7ee"; color="#5a9a5a";
+    git [label="código: notebooks/, scripts\nrequirements.txt"];
+    muestra [label="data/sample/\n20 imágenes ScienceDB"];
+    ci [label="GitHub Actions\nprotección de datos + lint"];
+    docs [label="docs/\nreportes PDF"];
+  }
+
+  caetec -> raw [label="subida manual"];
+  etiquetas -> raw [label="hoja de etiquetas"];
+  sciencedb -> raw [label="descarga"];
+  raw -> etl [label="archivos binarios"];
+  etl -> clean [taillabel="imágenes\nlimpias", labeldistance=4, labelangle=-40, labelfontsize=9];
+  etl -> processed [headlabel="tablas", labeldistance=3, labelangle=30, labelfontsize=9];
+  clean -> seg [label="imágenes"];
+  seg -> recortes [label="recortes"];
+  recortes -> dino [label="recortes 448 px"];
+  processed -> dino [label="BCS, vaca, partición"];
+  dino -> cache [label="vectores"];
+  cache -> ridge [label="X (2048)"];
+  ridge -> modelo [label="modelo y\npredicciones"];
+  etl -> muestra [label="muestra pública\n(solo ScienceDB)", style=dashed, color="#5a9a5a"];
+  git -> etl [label="código versionado", style=dashed, color="#5a9a5a"];
+  ci -> git [label="revisa cada PR", style=dashed, color="#5a9a5a"];
+
+  {rank=same; caetec; etiquetas; sciencedb}
+}
