@@ -1,0 +1,60 @@
+// Entradas, transformaciones y salidas de cada paso del ETL (notebooks/1_datos/ETL_BCS_PySpark.ipynb).
+// Generar: dot -Tpng -Gdpi=170 diagrama_etl.dot -o diagrama_etl.png
+digraph ETL {
+  rankdir=TB; nodesep=0.25; ranksep=0.28;
+  fontname="Helvetica";
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, color="#555555", width=2.4];
+  edge [color="#444444", arrowsize=0.7];
+
+  // encabezados de columna
+  h_in  [label="ENTRADA", shape=plaintext, style="", fontsize=11, fontname="Helvetica-Bold"];
+  h_tr  [label="TRANSFORMACIÓN", shape=plaintext, style="", fontsize=11, fontname="Helvetica-Bold"];
+  h_out [label="SALIDA", shape=plaintext, style="", fontsize=11, fontname="Helvetica-Bold"];
+
+  node [fillcolor="#fdf1e6"];
+  i1 [label="raw/<bcs>/*.jpg, png o heic\n(archivos binarios)"];
+  i2 [label="Tabla de archivos\n(path, content, length)"];
+  i3 [label="Metadatos por imagen"];
+  i4 [label="Imágenes válidas"];
+  i5 [label="Vacas con BCS"];
+  i6 [label="Imágenes con fold\n(archivo original)"];
+  i7 [label="Tablas en memoria\n+ imágenes limpias"];
+
+  node [fillcolor="#eaf2fb"];
+  t1 [label="1. Extracción\nlectura binaria recursiva (Spark)"];
+  t2 [label="2. Metadatos\nBCS de la carpeta, vaca del nombre,\ntipo de toma, SHA-256 del contenido"];
+  t3 [label="3. Limpieza\nmarca archivo vacío, BCS fuera de clases,\nsin vaca, BCS inconsistente, duplicado"];
+  t4 [label="4. Selección por vaca\n(todas o N por clase)"];
+  t5 [label="5. K-fold por vaca\nStratifiedGroupKFold (k = 5, semilla 42)\n+ assert: ninguna vaca en dos folds"];
+  t6 [label="6. Transformación\nendereza (EXIF), RGB, lado mayor 640 px,\nJPEG sin EXIF ni GPS"];
+  t7 [label="7. Carga y verificación\nParquet + CSV, conteos y\nhashes recalculados"];
+
+  node [fillcolor="#eef7ee"];
+  o1 [label="Tabla de archivos\n(path, content, length)"];
+  o2 [label="image_id, bcs, cow_id,\ntipo_toma"];
+  o3 [label="motivo_exclusion\n(nulo = válida)"];
+  o4 [label="Vacas con BCS\ny n_imagenes"];
+  o5 [label="fold por vaca\n+ folds_resumen"];
+  o6 [label="clean/images/bcs=<x>/<hash>.jpg\nruta_limpia, ancho, alto, estado"];
+  o7 [label="processed/imagenes, vacas,\nfolds_resumen (.parquet y .csv)"];
+
+  {rank=same; h_in; h_tr; h_out}
+  {rank=same; i1; t1; o1}
+  {rank=same; i2; t2; o2}
+  {rank=same; i3; t3; o3}
+  {rank=same; i4; t4; o4}
+  {rank=same; i5; t5; o5}
+  {rank=same; i6; t6; o6}
+  {rank=same; i7; t7; o7}
+
+  h_in -> i1 [style=invis]; h_tr -> t1 [style=invis]; h_out -> o1 [style=invis];
+  i1 -> t1 -> o1; i2 -> t2 -> o2; i3 -> t3 -> o3; i4 -> t4 -> o4;
+  i5 -> t5 -> o5; i6 -> t6 -> o6; i7 -> t7 -> o7;
+  // la salida de un paso es la entrada del siguiente
+  edge [style=dashed, color="#999999", constraint=true];
+  o1 -> i2; o2 -> i3; o3 -> i4; o4 -> i5; o5 -> i6; o6 -> i7;
+  i1 -> i2 [style=invis]; i2 -> i3 [style=invis]; i3 -> i4 [style=invis]; i4 -> i5 [style=invis];
+  i5 -> i6 [style=invis]; i6 -> i7 [style=invis];
+  t1 -> t2 [style=invis]; t2 -> t3 [style=invis]; t3 -> t4 [style=invis]; t4 -> t5 [style=invis];
+  t5 -> t6 [style=invis]; t6 -> t7 [style=invis];
+}
